@@ -140,27 +140,35 @@ function App() {
               key={`${r}-${c}`}
               className={`cell ${selected?.r === r && selected?.c === c ? 'selected' : ''}`}
               onClick={() => handleCellClick(r, c)}
-            >
-              <AnimatePresence>
-                {ball && (
-                  <motion.div
-                    layoutId={ball.id}
-                    initial={{ y: -30, opacity: 0, scale: 0.5 }}
-                    animate={{ y: 0, opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0 }}
-                    transition={{ 
-                      type: "spring", 
-                      stiffness: 400, 
-                      damping: 30,
-                      mass: 0.8
-                    }}
-                    className={`ball ${ball.color}`}
-                  />
-                )}
-              </AnimatePresence>
-            </div>
+            />
           ))
         ))}
+        <AnimatePresence>
+          {board.flatMap((row, r) => 
+            row.map((ball, c) => {
+              if (!ball) return null;
+              
+              const x = 7 + c * 32;
+              const y = 7 + r * 32;
+
+              return (
+                <motion.div
+                  key={ball.id}
+                  initial={{ x, y: y - 300, opacity: 0, scale: 0.5 }}
+                  animate={{ x, y, opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  transition={{ 
+                    type: "spring", 
+                    stiffness: 400, 
+                    damping: 30,
+                    mass: 0.8
+                  }}
+                  className={`ball ${ball.color}`}
+                />
+              );
+            })
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
