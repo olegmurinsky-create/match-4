@@ -135,7 +135,7 @@ function App() {
 
       <div className="board">
         {board.map((row, r) => (
-          row.map((ball, c) => (
+          row.map((_, c) => (
             <div 
               key={`${r}-${c}`}
               className={`cell ${selected?.r === r && selected?.c === c ? 'selected' : ''}`}
