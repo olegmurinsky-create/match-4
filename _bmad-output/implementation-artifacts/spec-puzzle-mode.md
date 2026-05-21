@@ -2,7 +2,7 @@
 title: 'Puzzle/Clear-Board Game Mode'
 type: 'feature'
 created: '2026-05-21'
-status: 'done'
+6status: 'done'
 baseline_commit: '3505839f5f07e2ae6da4a3ffbf277acb0756316c'
 context: []
 ---
