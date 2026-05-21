@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Board, 
@@ -8,7 +8,8 @@ import {
   applyGravity,
   hasPossibleMoves,
   ROWS,
-  COLS
+  COLS,
+  findAPossibleMove
 } from './gameLogic';
 import './App.css';
 
@@ -35,8 +36,9 @@ function App() {
   const [leaderboard, setLeaderboard] = useState<ScoreEntry[]>([]);
   const [isFeverMode, setIsFeverMode] = useState<boolean>(false);
   const [feverTimeLeft, setFeverTimeLeft] = useState<number>(20);
-
-  const targetScore = level * 1000 - 500; // Level 1: 500, Level 2: 1500, Level 3: 2500...
+  const [targetScore, setTargetScore] = useState<number>(500); // Level 1: 500, Level 2: 1500, Level 3: 2500...
+  const [hintedBallIds, setHintedBallIds] = useState<string[]>([]);
+  const idleTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -87,6 +89,40 @@ function App() {
       return () => clearInterval(timer);
     }
   }, [gameState, isFeverMode]);
+
+  const resetIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+    }
+    if (hintTimeoutRef.current) {
+      clearTimeout(hintTimeoutRef.current);
+    }
+    setHintedBallIds([]); // Clear hints on any action
+
+    if (gameState === 'playing' && !isProcessing) {
+      idleTimerRef.current = window.setTimeout(() => {
+        const move = findAPossibleMove(board);
+        if (move && move[0] && move[1]) {
+          const ball1 = board[move[0].r][move[0].c];
+          const ball2 = board[move[1].r][move[1].c];
+          if (ball1 && ball2) {
+            setHintedBallIds([ball1.id, ball2.id]);
+            // Make the hint disappear after a short time
+            hintTimeoutRef.current = window.setTimeout(() => setHintedBallIds([]), 1500);
+          }
+        }
+      }, 5000);
+    }
+  }, [board, gameState, isProcessing]);
+
+  useEffect(() => {
+    resetIdleTimer();
+    return () => {
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
+    };
+  }, [gameState, isProcessing, resetIdleTimer]);
 
   const processCascades = useCallback(async (currentBoard: Board, currentScore: number) => {
     let b = currentBoard;
@@ -156,6 +192,7 @@ function App() {
   }, [targetScore, isFeverMode]);
 
   const handleCellClick = async (r: number, c: number) => {
+    resetIdleTimer(); // Reset timer on click
     if (isProcessing || gameState !== 'playing') return;
 
     if (!selected) {
@@ -223,20 +260,25 @@ function App() {
   };
 
   const startNextLevel = () => {
-    setLevel(l => l + 1);
+    const nextLevel = level + 1;
+    setLevel(nextLevel);
+    setTargetScore(nextLevel * 1000 - 500);
     setBoard(createInitialBoard());
     setGameState('playing');
     setIsFeverMode(false);
     setFeverTimeLeft(20);
+    resetIdleTimer();
   };
 
   const restartGame = () => {
     setLevel(1);
     setScore(0);
+    setTargetScore(500);
     setBoard(createInitialBoard());
     setGameState('playing');
     setIsFeverMode(false);
     setFeverTimeLeft(20);
+    resetIdleTimer();
   };
 
   return (
@@ -274,6 +316,7 @@ function App() {
               const x = 7 + c * 32;
               const y = 7 + r * 32;
 
+              const isHinted = hintedBallIds.includes(ball.id);
               return (
                 <motion.div
                   key={ball.id}
@@ -286,7 +329,7 @@ function App() {
                     damping: 30,
                     mass: 0.8
                   }}
-                  className={`ball ${ball.color}`}
+                  className={`ball ${ball.color} ${isHinted ? 'hint-shake' : ''}`}
                 />
               );
             })

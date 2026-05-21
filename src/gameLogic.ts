@@ -171,3 +171,31 @@ export function hasPossibleMoves(board: Board): boolean {
   }
   return false;
 }
+
+export function findAPossibleMove(board: Board): { r: number, c: number }[] | null {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      // Horizontal swap
+      if (c < COLS - 1 && board[r][c] !== null && board[r][c+1] !== null) {
+        const tempBoard = board.map(row => [...row]);
+        const temp = tempBoard[r][c];
+        tempBoard[r][c] = tempBoard[r][c+1];
+        tempBoard[r][c+1] = temp;
+        if (findMatches(tempBoard).hasMatch) {
+          return [{ r, c }, { r, c: c + 1 }];
+        }
+      }
+      // Vertical swap
+      if (r < ROWS - 1 && board[r][c] !== null && board[r+1][c] !== null) {
+        const tempBoard = board.map(row => [...row]);
+        const temp = tempBoard[r][c];
+        tempBoard[r][c] = tempBoard[r+1][c];
+        tempBoard[r+1][c] = temp;
+        if (findMatches(tempBoard).hasMatch) {
+          return [{ r, c }, { r: r + 1, c }];
+        }
+      }
+    }
+  }
+  return null;
+}
