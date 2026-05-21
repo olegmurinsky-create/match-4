@@ -4,7 +4,8 @@ import {
   fillRandom,
   findMatches,
   removeMatches,
-  applyGravityAndRefill,
+  applyGravity,
+  hasPossibleMoves,
   createBall,
   ROWS,
   COLS
@@ -111,24 +112,42 @@ describe('Game Logic', () => {
     });
   });
 
-  describe('applyGravityAndRefill', () => {
-    it('applies gravity and refills top', () => {
+  describe('applyGravity', () => {
+    it('applies gravity without refilling', () => {
       const board = createEmptyBoard();
       // Leave bottom cell null, put 'red' above it.
       board[ROWS - 2][0] = createBall('red');
       board[ROWS - 3][0] = createBall('blue');
       
-      const newBoard = applyGravityAndRefill(board);
+      const newBoard = applyGravity(board);
       
       // They should fall down
       expect(newBoard[ROWS - 1][0]?.color).toBe('red');
       expect(newBoard[ROWS - 2][0]?.color).toBe('blue');
       
-      // Top should be refilled
+      // Top should remain null
       for (let r = 0; r < ROWS - 2; r++) {
-        expect(newBoard[r][0]).not.toBeNull();
-        expect(['red', 'blue', 'green', 'yellow']).toContain(newBoard[r][0]!.color);
+        expect(newBoard[r][0]).toBeNull();
       }
+    });
+  });
+
+  describe('hasPossibleMoves', () => {
+    it('returns true if a valid move exists', () => {
+      const board = createEmptyBoard();
+      board[0][0] = createBall('red');
+      board[0][1] = createBall('red');
+      board[0][2] = createBall('red');
+      board[1][3] = createBall('red');
+      
+      // Swapping [0][3] and [1][3] will complete a horizontal match
+      expect(hasPossibleMoves(board)).toBe(true);
+    });
+
+    it('returns false if no valid moves exist', () => {
+      const board = createEmptyBoard();
+      // An empty board has no moves
+      expect(hasPossibleMoves(board)).toBe(false);
     });
   });
 });

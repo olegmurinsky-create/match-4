@@ -2,7 +2,8 @@
 title: 'Puzzle/Clear-Board Game Mode'
 type: 'feature'
 created: '2026-05-21'
-status: 'ready-for-dev'
+status: 'done'
+baseline_commit: '3505839f5f07e2ae6da4a3ffbf277acb0756316c'
 context: []
 ---
 
@@ -52,13 +53,13 @@ context: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `src/gameLogic.ts` -- Modify `applyGravityAndRefill` to `applyGravity` (remove refill logic) and update `createInitialBoard` to use it -- to support puzzle mode mechanics.
-- [ ] `src/gameLogic.ts` -- Add `hasPossibleMoves(board)` function -- to detect level end conditions.
-- [ ] `src/gameLogic.ts` -- Update `findMatches` score return or let `App.tsx` calculate based on match length (bonus for >4) -- to encourage strategic play.
-- [ ] `src/App.tsx` -- Add states for `level`, `targetScore`, `gameState` ('playing', 'level_clear', 'game_over') and update `processCascades` to handle new scoring and check for `hasPossibleMoves` at the end of cascades -- to manage level progression.
-- [ ] `src/App.tsx` -- Implement Game Over modal with 3-letter name input and LocalStorage saving, and Level Clear transition -- to satisfy brief requirements.
-- [ ] `src/App.css` -- Add styles for Game Over/Level Clear overlays and leaderboard -- to make the UI presentable.
-- [ ] `src/gameLogic.test.ts` -- Add tests for `applyGravity`, `hasPossibleMoves` -- to ensure puzzle mechanics work correctly.
+- [x] `src/gameLogic.ts` -- Modify `applyGravityAndRefill` to `applyGravity` (remove refill logic) and update `createInitialBoard` to use it -- to support puzzle mode mechanics.
+- [x] `src/gameLogic.ts` -- Add `hasPossibleMoves(board)` function -- to detect level end conditions.
+- [x] `src/gameLogic.ts` -- Update `findMatches` score return or let `App.tsx` calculate based on match length (bonus for >4) -- to encourage strategic play.
+- [x] `src/App.tsx` -- Add states for `level`, `targetScore`, `gameState` ('playing', 'level_clear', 'game_over') and update `processCascades` to handle new scoring and check for `hasPossibleMoves` at the end of cascades -- to manage level progression.
+- [x] `src/App.tsx` -- Implement Game Over modal with 3-letter name input and LocalStorage saving, and Level Clear transition -- to satisfy brief requirements.
+- [x] `src/App.css` -- Add styles for Game Over/Level Clear overlays and leaderboard -- to make the UI presentable.
+- [x] `src/gameLogic.test.ts` -- Add tests for `applyGravity`, `hasPossibleMoves` -- to ensure puzzle mechanics work correctly.
 
 **Acceptance Criteria:**
 - Given a new game, when starting, then the board is full and the level is 1 with a visible target score.
@@ -81,3 +82,35 @@ context: []
 - Play the game to ensure no new balls drop after a match.
 - Verify that the game transitions to "Game Over" or "Next Level" when no moves are available.
 - Check that the leaderboard correctly saves and loads from localStorage.
+
+## Suggested Review Order
+
+**Core Game Rules**
+
+- Removes refill logic and just drops balls
+  [`gameLogic.ts:103`](../../src/gameLogic.ts#L103)
+- Ensures board is fully generated and guaranteed to have moves
+  [`gameLogic.ts:119`](../../src/gameLogic.ts#L119)
+- Simulates adjacent swaps carefully avoiding empty cells
+  [`gameLogic.ts:145`](../../src/gameLogic.ts#L145)
+
+**Game Loop & Progression**
+
+- New multiplier logic scoring chains up to target score
+  [`App.tsx:61`](../../src/App.tsx#L61)
+- Blocks input unless gameState is purely 'playing'
+  [`App.tsx:106`](../../src/App.tsx#L106)
+- Target score and clear conditions restart logic
+  [`App.tsx:165`](../../src/App.tsx#L165)
+
+**UI & Game Over Overlays**
+
+- Displays level transition, final score, and leaderboard input
+  [`App.tsx:228`](../../src/App.tsx#L228)
+- Basic styling for modal layers and uppercase leaderboard
+  [`App.css:100`](../../src/App.css#L100)
+
+**Tests**
+
+- Tests verify puzzle-specific logic and constraints
+  [`gameLogic.test.ts:116`](../../src/gameLogic.test.ts#L116)

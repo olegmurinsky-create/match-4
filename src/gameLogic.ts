@@ -100,7 +100,7 @@ export function removeMatches(board: Board, matchedPositions: { r: number; c: nu
   return newBoard;
 }
 
-export function applyGravityAndRefill(board: Board): Board {
+export function applyGravity(board: Board): Board {
   const newBoard = createEmptyBoard();
 
   for (let c = 0; c < COLS; c++) {
@@ -111,26 +111,63 @@ export function applyGravityAndRefill(board: Board): Board {
         writeR--;
       }
     }
-    // Refill the top with new random colors
-    for (let r = writeR; r >= 0; r--) {
-      newBoard[r][c] = createBall();
-    }
   }
 
   return newBoard;
 }
 
 export function createInitialBoard(): Board {
-  let board = createEmptyBoard();
-  board = fillRandom(board);
+  let board: Board;
   
-  // Resolve any initial matches
-  let matchResult = findMatches(board);
-  while (matchResult.hasMatch) {
-    board = removeMatches(board, matchResult.matchedPositions);
-    board = applyGravityAndRefill(board);
-    matchResult = findMatches(board);
-  }
+  do {
+    board = createEmptyBoard();
+    
+    // Fill the board ensuring no initial matches
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        let color: Color;
+        do {
+          color = getRandomColor();
+          board[r][c] = { id: Math.random().toString(36).substring(2, 11), color };
+        } while (
+          // Simple check to prevent immediate matches (horizontal, vertical, and diagonals)
+          // Since we fill top-to-bottom, left-to-right, we check left, up, up-left, up-right
+          (c >= 3 && board[r][c-1]?.color === color && board[r][c-2]?.color === color && board[r][c-3]?.color === color) ||
+          (r >= 3 && board[r-1][c]?.color === color && board[r-2][c]?.color === color && board[r-3][c]?.color === color) ||
+          (r >= 3 && c >= 3 && board[r-1][c-1]?.color === color && board[r-2][c-2]?.color === color && board[r-3][c-3]?.color === color) ||
+          (r >= 3 && c <= COLS - 4 && board[r-1][c+1]?.color === color && board[r-2][c+2]?.color === color && board[r-3][c+3]?.color === color)
+        );
+      }
+    }
+  } while (!hasPossibleMoves(board));
   
   return board;
+}
+
+export function hasPossibleMoves(board: Board): boolean {
+  // Try all possible adjacent swaps horizontally and vertically
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      // Horizontal swap
+      if (c < COLS - 1 && board[r][c] !== null && board[r][c+1] !== null) {
+        const tempBoard = board.map(row => [...row]);
+        const temp = tempBoard[r][c];
+        tempBoard[r][c] = tempBoard[r][c+1];
+        tempBoard[r][c+1] = temp;
+        // Gravity is applied because swapping could create hovering balls if not careful, 
+        // wait, we only swap horizontally adjacent balls, so gravity isn't triggered by swap alone,
+        // unless they match. If they match, `findMatches` catches it.
+        if (findMatches(tempBoard).hasMatch) return true;
+      }
+      // Vertical swap
+      if (r < ROWS - 1 && board[r][c] !== null && board[r+1][c] !== null) {
+        const tempBoard = board.map(row => [...row]);
+        const temp = tempBoard[r][c];
+        tempBoard[r][c] = tempBoard[r+1][c];
+        tempBoard[r+1][c] = temp;
+        if (findMatches(tempBoard).hasMatch) return true;
+      }
+    }
+  }
+  return false;
 }

@@ -5,7 +5,8 @@ import {
   createInitialBoard, 
   findMatches, 
   removeMatches, 
-  applyGravityAndRefill,
+  applyGravity,
+  hasPossibleMoves,
   ROWS,
   COLS
 } from './gameLogic';
@@ -16,11 +17,49 @@ interface Position {
   c: number;
 }
 
+interface ScoreEntry {
+  name: string;
+  score: number;
+}
+
+type GameState = 'playing' | 'level_clear' | 'game_over';
+
 function App() {
   const [board, setBoard] = useState<Board>(() => createEmptyInitial());
   const [selected, setSelected] = useState<Position | null>(null);
   const [score, setScore] = useState<number>(0);
+  const [level, setLevel] = useState<number>(1);
+  const [gameState, setGameState] = useState<GameState>('playing');
   const [isProcessing, setIsProcessing] = useState<boolean>(true);
+  const [playerName, setPlayerName] = useState<string>('');
+  const [leaderboard, setLeaderboard] = useState<ScoreEntry[]>([]);
+
+  const targetScore = level * 1000 - 500; // Level 1: 500, Level 2: 1500, Level 3: 2500...
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('match-4-leaderboard');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setLeaderboard(parsed);
+      }
+    } catch (e) {
+      console.error('Failed to load leaderboard', e);
+    }
+  }, []);
+
+  const saveScore = () => {
+    if (playerName.trim().length === 3) {
+      const newLeaderboard = [...leaderboard, { name: playerName.toUpperCase(), score }].sort((a, b) => b.score - a.score).slice(0, 5);
+      setLeaderboard(newLeaderboard);
+      try {
+        localStorage.setItem('match-4-leaderboard', JSON.stringify(newLeaderboard));
+      } catch (e) {
+        console.error('Failed to save leaderboard', e);
+      }
+      setPlayerName('');
+    }
+  };
 
   // Initialize board on mount safely
   useEffect(() => {
@@ -32,11 +71,29 @@ function App() {
     let b = currentBoard;
     let s = currentScore;
     let matchResult = findMatches(b);
+    let multiplier = 1;
     
     while (matchResult.hasMatch) {
       const matchCount = matchResult.matchedPositions.length;
-      s += matchCount * 10;
+      
+      // Calculate score roughly by grouping into 4s and 5s if possible, or just base it on length
+      // Proper grouping is complex, but to avoid 8-balls giving 160 instead of 80, 
+      // we can count how many 4-matches fit in. For a simple fix:
+      let basePoints = 0;
+      if (matchCount < 4) {
+         basePoints = 0; 
+      } else if (matchCount === 4) {
+         basePoints = 40;
+      } else if (matchCount === 5) {
+         basePoints = 100;
+      } else {
+         // Best effort for larger clusters
+         basePoints = matchCount * 20;
+      }
+
+      s += basePoints * multiplier;
       setScore(s);
+      multiplier++;
       
       // Remove matches, triggering exit animation
       b = removeMatches(b, matchResult.matchedPositions);
@@ -45,8 +102,8 @@ function App() {
       // Wait for disappearing animation
       await new Promise(res => setTimeout(res, 200));
       
-      // Apply gravity and refill, triggering fall animation
-      b = applyGravityAndRefill(b);
+      // Apply gravity, triggering fall animation (NO REFILL)
+      b = applyGravity(b);
       setBoard(b);
       
       // Wait for falling animation to settle
@@ -55,11 +112,20 @@ function App() {
       matchResult = findMatches(b);
     }
     
+    // Check level end condition
+    if (!hasPossibleMoves(b)) {
+      if (s >= targetScore) {
+        setGameState('level_clear');
+      } else {
+        setGameState('game_over');
+      }
+    }
+
     setIsProcessing(false);
-  }, []);
+  }, [targetScore]);
 
   const handleCellClick = async (r: number, c: number) => {
-    if (isProcessing) return;
+    if (isProcessing || gameState !== 'playing') return;
 
     if (!selected) {
       if (board[r][c]) {
@@ -82,6 +148,11 @@ function App() {
       if (board[r][c]) {
         setSelected({ r, c });
       }
+      return;
+    }
+
+    if (board[r][c] === null || board[selected.r][selected.c] === null) {
+      setSelected(null);
       return;
     }
 
@@ -120,16 +191,30 @@ function App() {
     }
   };
 
+  const startNextLevel = () => {
+    setLevel(l => l + 1);
+    setBoard(createInitialBoard());
+    setGameState('playing');
+  };
+
+  const restartGame = () => {
+    setLevel(1);
+    setScore(0);
+    setBoard(createInitialBoard());
+    setGameState('playing');
+  };
+
   return (
     <div className="game-container">
       <div className="header">
-        <h1>Match-4</h1>
-        <div className="score-board">Score: {score}</div>
-        <button className="reset-button" onClick={() => {
-          setIsProcessing(true);
-          setScore(0);
-          setBoard(createInitialBoard());
-          setIsProcessing(false);
+        <h1>Match-4 <span className="level">Level {level}</span></h1>
+        <div className="score-board">
+          Score: {score} / {targetScore}
+        </div>
+        <button className="reset-button" disabled={isProcessing} onClick={() => {
+          if (!isProcessing) {
+            restartGame();
+          }
         }}>Restart</button>
       </div>
 
@@ -169,6 +254,45 @@ function App() {
             })
           )}
         </AnimatePresence>
+
+        {gameState === 'level_clear' && (
+          <div className="overlay">
+            <h2>Level {level} Cleared!</h2>
+            <p>Score: {score}</p>
+            <button disabled={isProcessing} onClick={startNextLevel}>Next Level</button>
+          </div>
+        )}
+
+        {gameState === 'game_over' && (
+          <div className="overlay game-over">
+            <h2>Game Over</h2>
+            <p>Final Score: {score}</p>
+            
+            <div className="leaderboard-entry">
+              <input 
+                maxLength={3} 
+                placeholder="AAA" 
+                value={playerName}
+                onChange={e => setPlayerName(e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase())}
+              />
+              <button disabled={playerName.length !== 3} onClick={saveScore}>Save</button>
+            </div>
+
+            {leaderboard.length > 0 && (
+              <div className="leaderboard">
+                <h3>High Scores</h3>
+                {leaderboard.map((entry, i) => (
+                  <div key={i} className="leaderboard-row">
+                    <span>{entry.name}</span>
+                    <span>{entry.score}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button className="restart-btn" disabled={isProcessing} onClick={restartGame}>Play Again</button>
+          </div>
+        )}
       </div>
     </div>
   );
