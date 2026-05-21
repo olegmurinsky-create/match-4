@@ -38,7 +38,6 @@ function App() {
   const [isFeverMode, setIsFeverMode] = useState<boolean>(false);
   const [feverTimeLeft, setFeverTimeLeft] = useState<number>(20);
   const [targetScore, setTargetScore] = useState<number>(500); // Level 1: 500, Level 2: 1500, Level 3: 2500...
-  const [time, setTime] = useState<string>("0:00"); // Placeholder for timer
   const [hintedBallIds, setHintedBallIds] = useState<string[]>([]);
   const idleTimeoutRef = useRef<number | null>(null);
   const hintIntervalRef = useRef<number | null>(null);

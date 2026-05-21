@@ -44,3 +44,4 @@ Thumbs.db
 
 # BMad personal configurations
 **/*.user.toml
+docs\project-scan-report.json
