@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import StatusBar from './StatusBar'; // Import the new component
 import { 
   Board, 
   createInitialBoard, 
@@ -37,8 +38,39 @@ function App() {
   const [isFeverMode, setIsFeverMode] = useState<boolean>(false);
   const [feverTimeLeft, setFeverTimeLeft] = useState<number>(20);
   const [targetScore, setTargetScore] = useState<number>(500); // Level 1: 500, Level 2: 1500, Level 3: 2500...
+  const [time, setTime] = useState<string>("0:00"); // Placeholder for timer
   const [hintedBallIds, setHintedBallIds] = useState<string[]>([]);
-  const idleTimerRef = useRef<number | null>(null);
+  const idleTimeoutRef = useRef<number | null>(null);
+  const hintIntervalRef = useRef<number | null>(null);
+  const persistentHintRef = useRef<Position[] | null>(null);
+
+  const ballVariants = {
+    initial: (custom: { x: number, y: number }) => ({
+      x: custom.x,
+      y: custom.y - 300,
+      opacity: 0,
+      scale: 0.5
+    }),
+    animate: (custom: { x: number, y: number }) => ({
+      x: custom.x,
+      y: custom.y,
+      opacity: 1,
+      scale: 1,
+    }),
+    hint: {
+      rotate: [-3, 3, -3, 3, 0],
+      scale: [1, 1.25, 1, 1.25, 1],
+      transition: {
+        duration: 1.5,
+        ease: "easeInOut",
+      }
+    },
+    exit: {
+      opacity: 0,
+      scale: 0
+    }
+  };
+
 
   useEffect(() => {
     try {
@@ -90,39 +122,49 @@ function App() {
     }
   }, [gameState, isFeverMode]);
 
-  const resetIdleTimer = useCallback(() => {
-    if (idleTimerRef.current) {
-      clearTimeout(idleTimerRef.current);
-    }
-    if (hintTimeoutRef.current) {
-      clearTimeout(hintTimeoutRef.current);
-    }
-    setHintedBallIds([]); // Clear hints on any action
+  const stopHinting = useCallback(() => {
+    if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+    if (hintIntervalRef.current) clearInterval(hintIntervalRef.current);
+    setHintedBallIds([]);
+    persistentHintRef.current = null;
+  }, []);
+
+  const startIdleTimer = useCallback(() => {
+    stopHinting(); // Stop any previous timers/hints
 
     if (gameState === 'playing' && !isProcessing) {
-      idleTimerRef.current = window.setTimeout(() => {
+      idleTimeoutRef.current = window.setTimeout(() => {
+        // Find a move ONCE and store it in a ref
         const move = findAPossibleMove(board);
-        if (move && move[0] && move[1]) {
-          const ball1 = board[move[0].r][move[0].c];
-          const ball2 = board[move[1].r][move[1].c];
-          if (ball1 && ball2) {
-            setHintedBallIds([ball1.id, ball2.id]);
-            // Make the hint disappear after a short time
-            hintTimeoutRef.current = window.setTimeout(() => setHintedBallIds([]), 1500);
-          }
-        }
-      }, 5000);
-    }
-  }, [board, gameState, isProcessing]);
+        if (!move) return;
+        
+        persistentHintRef.current = move;
 
+        // Function to show the hint
+        const showHint = () => {
+          if (persistentHintRef.current) {
+            const move = persistentHintRef.current;
+            const ball1 = board[move[0].r][move[0].c];
+            const ball2 = board[move[1].r][move[1].c];
+            if (ball1 && ball2) {
+              setHintedBallIds([ball1.id, ball2.id]);
+              setTimeout(() => setHintedBallIds([]), 1500); 
+            }
+          }
+        };
+
+        showHint(); // Show hint immediately
+        hintIntervalRef.current = window.setInterval(showHint, 4000); // Repeat every 4s
+
+      }, 7000); // Wait 7s for initial inactivity
+    }
+  }, [board, gameState, isProcessing, stopHinting]);
+
+  // Effect to manage the idle timer
   useEffect(() => {
-    resetIdleTimer();
-    return () => {
-      if (idleTimerRef.current) {
-        clearTimeout(idleTimerRef.current);
-      }
-    };
-  }, [gameState, isProcessing, resetIdleTimer]);
+    startIdleTimer();
+    return stopHinting; // Cleanup on unmount or when dependencies change
+  }, [gameState, isProcessing, board, startIdleTimer, stopHinting]);
 
   const processCascades = useCallback(async (currentBoard: Board, currentScore: number) => {
     let b = currentBoard;
@@ -149,7 +191,9 @@ function App() {
          basePoints = matchCount * 20;
       }
 
-      if (!feverActive && s >= targetScore) {
+      // Check for fever mode activation *after* calculating points but *before* applying multiplier
+      const potentialNewScore = s + (basePoints * multiplier);
+      if (!feverActive && potentialNewScore >= targetScore) {
         feverActive = true;
         setIsFeverMode(true);
         setFeverTimeLeft(20);
@@ -192,8 +236,10 @@ function App() {
   }, [targetScore, isFeverMode]);
 
   const handleCellClick = async (r: number, c: number) => {
-    resetIdleTimer(); // Reset timer on click
     if (isProcessing || gameState !== 'playing') return;
+    
+    // Player made an action, so restart the idle timer
+    startIdleTimer();
 
     if (!selected) {
       if (board[r][c]) {
@@ -262,12 +308,12 @@ function App() {
   const startNextLevel = () => {
     const nextLevel = level + 1;
     setLevel(nextLevel);
-    setTargetScore(nextLevel * 1000 - 500);
+    setTargetScore(score + (nextLevel * 1000 - 500));
     setBoard(createInitialBoard());
     setGameState('playing');
     setIsFeverMode(false);
     setFeverTimeLeft(20);
-    resetIdleTimer();
+    // Note: Resetting a real timer would go here
   };
 
   const restartGame = () => {
@@ -278,26 +324,18 @@ function App() {
     setGameState('playing');
     setIsFeverMode(false);
     setFeverTimeLeft(20);
-    resetIdleTimer();
+    // Note: Resetting a real timer would go here
   };
 
   return (
     <div className="game-container">
-      <div className="header">
-        <h1>Match-4 <span className="level">Level {level}</span></h1>
-        <div className="score-board">
-          Score: {score} / {targetScore}
-          {isFeverMode && (
-            <div className="fever-timer">Fever Mode: {feverTimeLeft}s</div>
-          )}
-        </div>
-        <button className="reset-button" disabled={isProcessing} onClick={() => {
-          if (!isProcessing) {
-            restartGame();
-          }
-        }}>Restart</button>
-      </div>
-
+      <StatusBar 
+        score={score}
+        targetScore={targetScore}
+        time={`${Math.floor(feverTimeLeft / 60)}:${(feverTimeLeft % 60).toString().padStart(2, '0')}`}
+        onRestart={restartGame}
+        isFeverMode={isFeverMode}
+      />
       <div className="board">
         {board.map((row, r) => (
           row.map((_, c) => (
@@ -320,16 +358,18 @@ function App() {
               return (
                 <motion.div
                   key={ball.id}
-                  initial={{ x, y: y - 300, opacity: 0, scale: 0.5 }}
-                  animate={{ x, y, opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0 }}
-                  transition={{ 
-                    type: "spring", 
-                    stiffness: 400, 
+                  variants={ballVariants}
+                  custom={{ x, y }}
+                  initial="initial"
+                  animate={isHinted ? ["animate", "hint"] : "animate"}
+                  exit="exit"
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
                     damping: 30,
                     mass: 0.8
                   }}
-                  className={`ball ${ball.color} ${isHinted ? 'hint-shake' : ''}`}
+                  className={`ball ${ball.color}`}
                 />
               );
             })
@@ -354,7 +394,7 @@ function App() {
                 maxLength={3} 
                 placeholder="AAA" 
                 value={playerName}
-                onChange={e => setPlayerName(e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase())}
+                onChange={e => setPlayerName(e.target.value.replace(/[^A-Za-zА-Яа-я]/g, '').toUpperCase())}
               />
               <button disabled={playerName.length !== 3} onClick={saveScore}>Save</button>
             </div>

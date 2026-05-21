@@ -1,0 +1,75 @@
+/* src/StatusBar.css */
+
+.status-bar-container {
+  /* Set width to match the game board */
+  width: 490px; /* (15 * 30px) + (14 * 2px) + (2 * 4px) + (2 * 2px border) */
+  box-sizing: border-box; /* Important to include padding and border in the width */
+
+  /* Style to match the game board */
+  background-color: #333; /* Match .board background */
+  border: 2px solid #555; /* Match .board border */
+  border-radius: 8px; /* Match .board border-radius */
+  color: #fff; /* Set text to light for dark background */
+
+  /* Flexbox layout */
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: sans-serif;
+}
+
+.status-bar-left,
+.status-bar-center,
+.status-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.game-title {
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.score-display,
+.timer {
+  text-align: center;
+}
+
+.timer.hidden {
+  visibility: hidden;
+}
+
+.score-value,
+.timer-value {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.score-label,
+.timer-label {
+  font-size: 12px;
+  color: #ccc; /* Lighter color for sub-labels */
+}
+
+.right-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.restart-button {
+  border: 1px solid #777;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  background-color: #555; /* Darker button */
+  color: #fff;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.restart-button:hover {
+  background-color: #666;
+}

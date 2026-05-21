@@ -62,3 +62,19 @@ context_file: ''
 - **Step 1:** Implement the 20-second Fever Mode timer logic triggered by `score >= targetScore`.
 - **Step 2:** Add score multipliers during the Fever Mode active state.
 - **Step 3:** Implement an idle timer in the game loop (resetting on swap) that triggers a CSS shake animation on matched components after X seconds.
+
+---
+
+## Session Continuation: New Challenges
+
+**Date:** 2026-05-21
+
+Following the implementation of the initial ideas, two new problems have been identified:
+
+**Problem 1: UI/UX Redesign**
+*   **Issue:** The "Fever Mode" timer breaks the header layout. The overall header design feels disconnected from the polished look of the game board.
+*   **Goal:** Brainstorm a new, aesthetically pleasing, and functional header layout that integrates seamlessly with the game's style.
+
+**Problem 2: Auto-Hint Bug**
+*   **Issue:** The auto-hint feature is not working as expected. Hints do not appear after 5 seconds of inactivity.
+*   **Goal:** Brainstorm potential root causes for the bug to guide a structured debugging process.
