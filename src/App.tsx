@@ -33,6 +33,8 @@ function App() {
   const [isProcessing, setIsProcessing] = useState<boolean>(true);
   const [playerName, setPlayerName] = useState<string>('');
   const [leaderboard, setLeaderboard] = useState<ScoreEntry[]>([]);
+  const [isFeverMode, setIsFeverMode] = useState<boolean>(false);
+  const [feverTimeLeft, setFeverTimeLeft] = useState<number>(20);
 
   const targetScore = level * 1000 - 500; // Level 1: 500, Level 2: 1500, Level 3: 2500...
 
@@ -67,11 +69,31 @@ function App() {
     setIsProcessing(false);
   }, []);
 
+  // Fever Mode Timer
+  useEffect(() => {
+    if (gameState === 'playing' && isFeverMode) {
+      const timer = setInterval(() => {
+        setFeverTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setGameState('level_clear');
+            setIsFeverMode(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      return () => clearInterval(timer);
+    }
+  }, [gameState, isFeverMode]);
+
   const processCascades = useCallback(async (currentBoard: Board, currentScore: number) => {
     let b = currentBoard;
     let s = currentScore;
     let matchResult = findMatches(b);
     let multiplier = 1;
+    let feverActive = isFeverMode;
     
     while (matchResult.hasMatch) {
       const matchCount = matchResult.matchedPositions.length;
@@ -91,7 +113,14 @@ function App() {
          basePoints = matchCount * 20;
       }
 
-      s += basePoints * multiplier;
+      if (!feverActive && s >= targetScore) {
+        feverActive = true;
+        setIsFeverMode(true);
+        setFeverTimeLeft(20);
+      }
+
+      const feverMultiplier = feverActive ? 2 : 1;
+      s += basePoints * multiplier * feverMultiplier;
       setScore(s);
       multiplier++;
       
@@ -114,7 +143,9 @@ function App() {
     
     // Check level end condition
     if (!hasPossibleMoves(b)) {
-      if (s >= targetScore) {
+      if (feverActive) {
+        // Let the timer run out
+      } else if (s >= targetScore) {
         setGameState('level_clear');
       } else {
         setGameState('game_over');
@@ -122,7 +153,7 @@ function App() {
     }
 
     setIsProcessing(false);
-  }, [targetScore]);
+  }, [targetScore, isFeverMode]);
 
   const handleCellClick = async (r: number, c: number) => {
     if (isProcessing || gameState !== 'playing') return;
@@ -195,6 +226,8 @@ function App() {
     setLevel(l => l + 1);
     setBoard(createInitialBoard());
     setGameState('playing');
+    setIsFeverMode(false);
+    setFeverTimeLeft(20);
   };
 
   const restartGame = () => {
@@ -202,6 +235,8 @@ function App() {
     setScore(0);
     setBoard(createInitialBoard());
     setGameState('playing');
+    setIsFeverMode(false);
+    setFeverTimeLeft(20);
   };
 
   return (
@@ -210,6 +245,9 @@ function App() {
         <h1>Match-4 <span className="level">Level {level}</span></h1>
         <div className="score-board">
           Score: {score} / {targetScore}
+          {isFeverMode && (
+            <div className="fever-timer">Fever Mode: {feverTimeLeft}s</div>
+          )}
         </div>
         <button className="reset-button" disabled={isProcessing} onClick={() => {
           if (!isProcessing) {
