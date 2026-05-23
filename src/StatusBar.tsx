@@ -3,29 +3,38 @@ import './StatusBar.css';
 
 interface StatusBarProps {
   score: number;
-  targetScore: number;
-  time: string; // MM:SS format
+  level: number;
+  ballsPopped: number;
+  targetBalls: number;
   onRestart: () => void;
-  isFeverMode: boolean;
 }
 
-const StatusBar: React.FC<StatusBarProps> = ({ score, targetScore, time, onRestart, isFeverMode }) => {
+const StatusBar: React.FC<StatusBarProps> = ({ score, level, ballsPopped, targetBalls, onRestart }) => {
+  const progressPercent = targetBalls > 0 ? (ballsPopped / targetBalls) * 100 : 0;
+
   return (
     <div className="status-bar-container">
-      <div className="game-title">Match-4</div>
-      <div className="score-display">
-        <div className="score-value">{score} / {targetScore}</div>
-        <div className="score-label">Score</div>
+      
+      <div className="status-left">
+        <span className="level-text">LEVEL</span>
+        <span className="level-value">{level}</span>
       </div>
-      <div className="right-group">
-        <div className={`timer ${!isFeverMode ? 'hidden' : ''}`}>
-            <div className="timer-value">{time}</div>
-            <div className="timer-label">Fever Time</div>
+
+      <div className="status-center">
+        <div className="progress-bar-container">
+          <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
+          <div className="progress-bar-text">{`${ballsPopped} / ${targetBalls}`}</div>
         </div>
-        <button className="restart-button" onClick={onRestart}>
-          ↻ Restart
+      </div>
+      
+      <div className="status-right">
+        <span className="score-text">SCORE</span>
+        <span className="score-value">{score.toString().padStart(5, '0')}</span>
+        <button className="restart-button" onClick={onRestart} title="Restart">
+          ↻
         </button>
       </div>
+
     </div>
   );
 };

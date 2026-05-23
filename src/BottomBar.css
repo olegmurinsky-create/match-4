@@ -1,0 +1,30 @@
+.bottom-bar-container {
+  font-family: 'Orbitron', sans-serif;
+  width: 500px;
+  margin-top: 15px;
+  height: 25px; /* Reserve space to prevent layout shift */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fever-timer-bottom {
+  font-size: 1.2rem;
+  color: #ff4757;
+  text-shadow: 0 0 8px #ff4757, 0 0 15px #ff4757;
+  text-transform: uppercase;
+  transition: opacity 0.3s ease-in-out;
+  font-weight: 700;
+  animation: pulse-fever 1.5s infinite;
+}
+
+.fever-timer-bottom.hidden {
+  opacity: 0;
+  animation: none;
+}
+
+@keyframes pulse-fever {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}

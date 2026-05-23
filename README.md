@@ -4,11 +4,14 @@ A simple web-based puzzle game that combines classic "Match-3" swapping mechanic
 
 ## Gameplay Features
 
-- **Match 4 to Clear:** Swap adjacent balls to form lines of 4 or more balls of the same color.
-- **Any Direction:** Matches can be formed horizontally, vertically, or diagonally.
-- **Gravity & Cascades:** Cleared balls disappear, causing the balls above them to fall down. This can trigger satisfying chain reactions (combos).
-- **Smooth Animations:** Powered by `framer-motion` for fluid swapping, falling, and clearing visuals.
-- **Endless Mode:** Keep matching to rack up the highest score possible.
+- **Level-Based Progression:** Swap adjacent balls to form lines of 4 or more to reach the level's target score.
+- **Fever Mode:** Once the target score is hit, a fast-paced timed bonus round begins!
+- **Cascading Combos:** Cleared balls trigger cascades, allowing for chain reactions with score multipliers.
+- **Any-Direction Matches:** Form lines horizontally, vertically, or diagonally.
+- **High Score Leaderboard:** At the end of a game, enter your initials and make it into the top 5 high scores.
+- **Automatic Hints:** If you get stuck, the game will automatically show you a possible move.
+- **Sleek UI:** A dynamic status bar keeps you updated on your score and game state, integrated directly with the game board.
+- **Smooth Animations:** Powered by `framer-motion` for a fluid and responsive experience.
 
 ## Tech Stack
 

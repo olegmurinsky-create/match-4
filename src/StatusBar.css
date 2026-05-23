@@ -1,75 +1,90 @@
 /* src/StatusBar.css */
 
 .status-bar-container {
-  /* Set width to match the game board */
-  width: 490px; /* (15 * 30px) + (14 * 2px) + (2 * 4px) + (2 * 2px border) */
-  box-sizing: border-box; /* Important to include padding and border in the width */
-
-  /* Style to match the game board */
-  background-color: #333; /* Match .board background */
-  border: 2px solid #555; /* Match .board border */
-  border-radius: 8px; /* Match .board border-radius */
-  color: #fff; /* Set text to light for dark background */
-
-  /* Flexbox layout */
-  padding: 10px 15px;
+  font-family: 'Orbitron', sans-serif;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-family: sans-serif;
+  width: 500px;
+  background-color: #1a1a1a;
+  color: #00ffde;
+  padding: 8px 15px;
+  border-radius: 8px;
+  border: 2px solid #00ffde;
+  box-shadow: 0 0 15px #00ffde, inset 0 0 10px #00ffde;
+  margin-bottom: 20px;
+  text-transform: uppercase;
 }
 
-.status-bar-left,
-.status-bar-center,
-.status-bar-right {
+.status-left, .status-right, .status-center {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
 }
 
-.game-title {
-  font-weight: bold;
-  font-size: 20px;
+.status-center {
+  flex-grow: 1;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.score-display,
-.timer {
-  text-align: center;
+.level-text, .score-text {
+  font-size: 0.9rem;
+  opacity: 0.7;
 }
 
-.timer.hidden {
-  visibility: hidden;
+.level-value, .score-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-shadow: 0 0 5px #fff, 0 0 10px #00ffde;
 }
 
-.score-value,
-.timer-value {
-  font-size: 18px;
-  font-weight: bold;
+.progress-bar-container {
+  width: 90%;
+  height: 22px;
+  background-color: #004d40;
+  border: 1px solid #00ffde;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
 }
 
-.score-label,
-.timer-label {
-  font-size: 12px;
-  color: #ccc; /* Lighter color for sub-labels */
+.progress-bar-fill {
+  height: 100%;
+  background-color: #00ffde;
+  transition: width 0.3s ease-in-out;
+  box-shadow: 0 0 8px #00ffde;
 }
 
-.right-group {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+.progress-bar-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-shadow: 0 0 2px #fff;
 }
 
 .restart-button {
-  border: 1px solid #777;
-  border-radius: 8px;
-  padding: 8px 12px;
+  background: none;
+  border: 1px solid #00ffde;
+  border-radius: 50%;
+  color: #00ffde;
+  width: 30px;
+  height: 30px;
+  font-size: 1.2rem;
   cursor: pointer;
-  background-color: #555; /* Darker button */
-  color: #fff;
-  font-size: 16px;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .restart-button:hover {
-  background-color: #666;
+  background: #00ffde;
+  color: #1a1a1a;
+  box-shadow: 0 0 10px #00ffde;
 }

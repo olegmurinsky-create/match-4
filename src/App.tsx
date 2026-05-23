@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import StatusBar from './StatusBar'; // Import the new component
+import StatusBar from './StatusBar';
+import BottomBar from './BottomBar';
 import { 
   Board, 
   createInitialBoard, 
@@ -31,14 +32,16 @@ function App() {
   const [selected, setSelected] = useState<Position | null>(null);
   const [score, setScore] = useState<number>(0);
   const [level, setLevel] = useState<number>(1);
+  const [ballsPopped, setBallsPopped] = useState<number>(0);
+  const [targetBalls, setTargetBalls] = useState<number>(75);
   const [gameState, setGameState] = useState<GameState>('playing');
   const [isProcessing, setIsProcessing] = useState<boolean>(true);
   const [playerName, setPlayerName] = useState<string>('');
   const [leaderboard, setLeaderboard] = useState<ScoreEntry[]>([]);
   const [isFeverMode, setIsFeverMode] = useState<boolean>(false);
   const [feverTimeLeft, setFeverTimeLeft] = useState<number>(20);
-  const [targetScore, setTargetScore] = useState<number>(500); // Level 1: 500, Level 2: 1500, Level 3: 2500...
   const [hintedBallIds, setHintedBallIds] = useState<string[]>([]);
+  const [scoreSaved, setScoreSaved] = useState<boolean>(false);
   const idleTimeoutRef = useRef<number | null>(null);
   const hintIntervalRef = useRef<number | null>(null);
   const persistentHintRef = useRef<Position[] | null>(null);
@@ -85,7 +88,7 @@ function App() {
 
   const saveScore = () => {
     if (playerName.trim().length === 3) {
-      const newLeaderboard = [...leaderboard, { name: playerName.toUpperCase(), score }].sort((a, b) => b.score - a.score).slice(0, 5);
+      const newLeaderboard = [...leaderboard, { name: playerName.toUpperCase(), score }].sort((a, b) => b.score - a.score).slice(0, 10);
       setLeaderboard(newLeaderboard);
       try {
         localStorage.setItem('match-4-leaderboard', JSON.stringify(newLeaderboard));
@@ -93,6 +96,7 @@ function App() {
         console.error('Failed to save leaderboard', e);
       }
       setPlayerName('');
+      setScoreSaved(true);
     }
   };
 
@@ -165,15 +169,18 @@ function App() {
     return stopHinting; // Cleanup on unmount or when dependencies change
   }, [gameState, isProcessing, board, startIdleTimer, stopHinting]);
 
-  const processCascades = useCallback(async (currentBoard: Board, currentScore: number) => {
+  const processCascades = useCallback(async (currentBoard: Board, currentScore: number, currentBallsPopped: number) => {
     let b = currentBoard;
     let s = currentScore;
+    let p = currentBallsPopped;
     let matchResult = findMatches(b);
     let multiplier = 1;
     let feverActive = isFeverMode;
     
     while (matchResult.hasMatch) {
       const matchCount = matchResult.matchedPositions.length;
+      p += matchCount;
+      setBallsPopped(p);
       
       // Calculate score roughly by grouping into 4s and 5s if possible, or just base it on length
       // Proper grouping is complex, but to avoid 8-balls giving 160 instead of 80, 
@@ -191,8 +198,7 @@ function App() {
       }
 
       // Check for fever mode activation *after* calculating points but *before* applying multiplier
-      const potentialNewScore = s + (basePoints * multiplier);
-      if (!feverActive && potentialNewScore >= targetScore) {
+      if (!feverActive && p >= targetBalls) {
         feverActive = true;
         setIsFeverMode(true);
         setFeverTimeLeft(20);
@@ -224,7 +230,7 @@ function App() {
     if (!hasPossibleMoves(b)) {
       if (feverActive) {
         // Let the timer run out
-      } else if (s >= targetScore) {
+      } else if (p >= targetBalls) {
         setGameState('level_clear');
       } else {
         setGameState('game_over');
@@ -232,7 +238,7 @@ function App() {
     }
 
     setIsProcessing(false);
-  }, [targetScore, isFeverMode]);
+  }, [targetBalls, isFeverMode, ballsPopped]);
 
   const handleCellClick = async (r: number, c: number) => {
     if (isProcessing || gameState !== 'playing') return;
@@ -290,7 +296,7 @@ function App() {
 
     if (matchResult.hasMatch) {
       // Valid swap!
-      processCascades(tempBoard, score);
+      processCascades(tempBoard, score, ballsPopped);
     } else {
       // Invalid swap, revert
       const revertBoard = tempBoard.map(row => [...row]);
@@ -307,7 +313,8 @@ function App() {
   const startNextLevel = () => {
     const nextLevel = level + 1;
     setLevel(nextLevel);
-    setTargetScore(score + (nextLevel * 1000 - 500));
+    setBallsPopped(0);
+    setTargetBalls(55 + nextLevel * 20);
     setBoard(createInitialBoard());
     setGameState('playing');
     setIsFeverMode(false);
@@ -318,11 +325,13 @@ function App() {
   const restartGame = () => {
     setLevel(1);
     setScore(0);
-    setTargetScore(500);
+    setBallsPopped(0);
+    setTargetBalls(75);
     setBoard(createInitialBoard());
     setGameState('playing');
     setIsFeverMode(false);
     setFeverTimeLeft(20);
+    setScoreSaved(false);
     // Note: Resetting a real timer would go here
   };
 
@@ -330,10 +339,10 @@ function App() {
     <div className="game-container">
       <StatusBar 
         score={score}
-        targetScore={targetScore}
-        time={`${Math.floor(feverTimeLeft / 60)}:${(feverTimeLeft % 60).toString().padStart(2, '0')}`}
+        level={level}
+        ballsPopped={ballsPopped}
+        targetBalls={targetBalls}
         onRestart={restartGame}
-        isFeverMode={isFeverMode}
       />
       <div className="board">
         {board.map((row, r) => (
@@ -385,18 +394,24 @@ function App() {
 
         {gameState === 'game_over' && (
           <div className="overlay game-over">
-            <h2>Game Over</h2>
-            <p>Final Score: {score}</p>
+            {!scoreSaved && (
+              <>
+                <h2>Game Over</h2>
+                <p>Final Score: {score}</p>
+              </>
+            )}
             
-            <div className="leaderboard-entry">
-              <input 
-                maxLength={3} 
-                placeholder="AAA" 
-                value={playerName}
-                onChange={e => setPlayerName(e.target.value.replace(/[^A-Za-zА-Яа-я]/g, '').toUpperCase())}
-              />
-              <button disabled={playerName.length !== 3} onClick={saveScore}>Save</button>
-            </div>
+            {!scoreSaved && (
+              <div className="leaderboard-entry">
+                <input 
+                  maxLength={3} 
+                  placeholder="AAA" 
+                  value={playerName}
+                  onChange={e => setPlayerName(e.target.value.replace(/[^A-Za-zА-Яа-я]/g, '').toUpperCase())}
+                />
+                <button disabled={playerName.length !== 3} onClick={saveScore}>Save</button>
+              </div>
+            )}
 
             {leaderboard.length > 0 && (
               <div className="leaderboard">
@@ -414,6 +429,10 @@ function App() {
           </div>
         )}
       </div>
+      <BottomBar 
+        isFeverMode={isFeverMode}
+        time={`${Math.floor(feverTimeLeft / 60)}:${(feverTimeLeft % 60).toString().padStart(2, '0')}`}
+      />
     </div>
   );
 }
