@@ -19,13 +19,20 @@ const StatusBar: React.FC<StatusBarProps> = ({ score, level, ballsPopped, target
     progressPercent = targetBalls > 0 ? (ballsPopped / targetBalls) * 100 : 0;
     progressText = `${ballsPopped} / ${targetBalls}`;
   } else {
-    const currentProg = ballsPopped % 100;
-    // Don't snap to 0 if we just hit a multiple of 100 and haven't fully processed it yet, 
-    // but a simple modulo is usually fine visually if it resets.
-    progressPercent = (currentProg / 100) * 100;
-    if (ballsPopped > 0 && currentProg === 0) progressPercent = 100; // Keep it full until reset visually? Actually simpler to just use modulo.
-    progressPercent = ballsPopped > 0 && currentProg === 0 ? 100 : currentProg;
-    progressText = `${currentProg} / 100`;
+    let prevTarget = 0;
+    if (level > 1) {
+      prevTarget = 150; // initial target (50*1*1+100)
+      for (let i = 2; i < level; i++) {
+        prevTarget += 50 * i * i + 100;
+      }
+    }
+    const currentProg = Math.max(0, ballsPopped - prevTarget);
+    const interval = targetBalls - prevTarget;
+    
+    progressPercent = interval > 0 ? (currentProg / interval) * 100 : 0;
+    if (ballsPopped > 0 && currentProg === interval) progressPercent = 100; // Keep full before processing
+    
+    progressText = `${currentProg} / ${interval}`;
   }
 
   return (

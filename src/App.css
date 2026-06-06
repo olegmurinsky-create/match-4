@@ -92,6 +92,22 @@ h1 {
   box-shadow: 0 4px 8px rgba(251, 192, 45, 0.4), inset -2px -2px 6px rgba(0,0,0,0.2);
 }
 
+.ball.purple {
+  background-color: #9c88ff;
+}
+
+.ball.orange {
+  background-color: #ffa502;
+}
+
+.ball.cyan {
+  background-color: #00cec9;
+}
+
+.ball.pink {
+  background-color: #fd79a8;
+}
+
 .overlay {
   position: absolute;
   top: 0;

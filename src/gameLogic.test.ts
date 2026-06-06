@@ -139,6 +139,7 @@ describe('Game Logic', () => {
       board[0][0] = createBall(DEFAULT_COLORS, 'red');
       board[0][1] = createBall(DEFAULT_COLORS, 'red');
       board[0][2] = createBall(DEFAULT_COLORS, 'red');
+      board[0][3] = createBall(DEFAULT_COLORS, 'blue');
       board[1][3] = createBall(DEFAULT_COLORS, 'red');
       
       // Swapping [0][3] and [1][3] will complete a horizontal match

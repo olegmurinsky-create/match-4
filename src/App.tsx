@@ -6,12 +6,12 @@ import {
   Board, 
   createInitialBoard, 
   findMatches, 
-  removeMatches, 
-  hasPossibleMoves,
   findAPossibleMove,
   Color,
   DEFAULT_COLORS,
-  GameModeStrategy
+  GameModeStrategy,
+  removeMatches,
+  hasPossibleMoves
 } from './gameLogic';
 import { SurvivalStrategy } from './modes/survival';
 import { EndlessStrategy } from './modes/endless';
@@ -201,10 +201,10 @@ function App() {
     return stopHinting; // Cleanup on unmount or when dependencies change
   }, [gameState, isProcessing, board, startIdleTimer, stopHinting]);
 
-  const processCascades = useCallback(async (currentBoard: Board, currentScore: number, currentBallsPopped: number) => {
+  const processCascades = useCallback(async (currentBoard: Board) => {
     let b = currentBoard;
-    let s = currentScore;
-    let p = currentBallsPopped;
+    let s = score;
+    let p = ballsPopped;
     let matchResult = findMatches(b);
     let multiplier = 1;
     let feverActive = isFeverMode;
@@ -297,7 +297,10 @@ function App() {
     }
 
     setIsProcessing(false);
-  }, [targetBalls, isFeverMode, ballsPopped, gameMode, getStrategy, colorPool, level]);
+  }, [score, ballsPopped, targetBalls, level, isFeverMode, colorPool, gameMode, getStrategy]);
+
+  // And in handleCellClick:
+  // processCascades(tempBoard); instead of processCascades(tempBoard, score, ballsPopped);
 
   const handleCellClick = async (r: number, c: number) => {
     if (isProcessing || gameState !== 'playing') return;
@@ -355,7 +358,7 @@ function App() {
 
     if (matchResult.hasMatch) {
       // Valid swap!
-      processCascades(tempBoard, score, ballsPopped);
+      processCascades(tempBoard);
     } else {
       // Invalid swap, revert
       const revertBoard = tempBoard.map(row => [...row]);
@@ -385,7 +388,7 @@ function App() {
     setLevel(1);
     setScore(0);
     setBallsPopped(0);
-    setTargetBalls(mode === 'survival' ? 75 : 100); // 100 for endless milestone
+    setTargetBalls(mode === 'survival' ? 75 : 150); // 150 (50*1*1+100) for endless milestone
     setColorPool(DEFAULT_COLORS);
     setBoard(createInitialBoard(DEFAULT_COLORS));
     setGameState('playing');
@@ -393,6 +396,7 @@ function App() {
     setFeverTimeLeft(20);
     setScoreSaved(false);
     setActiveCombo(0);
+    setIsProcessing(false);
   };
 
   const restartGame = () => {
@@ -517,6 +521,12 @@ function App() {
             isFeverMode={isFeverMode}
             time={`${Math.floor(feverTimeLeft / 60)}:${(feverTimeLeft % 60).toString().padStart(2, '0')}`}
           />
+          <button 
+            onClick={() => { setScore(20000); setGameState('game_over'); setIsProcessing(false); }} 
+            style={{ position: 'absolute', bottom: 10, right: 10, zIndex: 100, background: 'red', color: 'white', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
+          >
+            DEBUG: Game Over (20k)
+          </button>
         </>
       )}
     </div>
