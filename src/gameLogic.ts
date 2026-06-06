@@ -9,12 +9,14 @@ export interface LevelProgressionResult {
   targetBalls: number;
   colorPool: Color[];
   shouldLevelUp?: boolean;
+  shouldActivateFever?: boolean;
 }
 
 export interface GameModeStrategy {
   fillSpaces(board: Board, colorPool: Color[]): Board;
   processLevelProgression(ballsPopped: number, currentLevel: number, currentTarget: number, currentColorPool: Color[]): LevelProgressionResult;
   checkGameOver(board: Board, ballsPopped: number, targetBalls: number, isFeverMode: boolean): boolean;
+  onFeverEnd(): 'level_clear' | 'playing'; // Return the next game state
 }
 
 export interface Ball {

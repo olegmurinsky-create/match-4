@@ -7,27 +7,29 @@ export class SurvivalStrategy implements GameModeStrategy {
   }
 
   processLevelProgression(ballsPopped: number, currentLevel: number, currentTarget: number, currentColorPool: Color[]): LevelProgressionResult {
-    if (ballsPopped >= currentTarget) {
-      // Signal level up, but don't compute the new state here. App.tsx will do it.
-      return {
-        level: currentLevel, 
-        targetBalls: currentTarget, 
-        colorPool: currentColorPool,
-        shouldLevelUp: true 
-      };
-    }
-    return { level: currentLevel, targetBalls: currentTarget, colorPool: currentColorPool, shouldLevelUp: false };
+    const shouldLevelUp = ballsPopped >= currentTarget;
+    return {
+      level: currentLevel,
+      targetBalls: currentTarget,
+      colorPool: currentColorPool,
+      shouldLevelUp: shouldLevelUp,
+      shouldActivateFever: shouldLevelUp, // In survival, level up also triggers fever
+    };
   }
 
   checkGameOver(board: Board, ballsPopped: number, targetBalls: number, isFeverMode: boolean): boolean {
     if (!hasPossibleMoves(board)) {
       if (isFeverMode) {
-        return false; // Fever handles time
+        return false; // Let timer run out
       } else if (ballsPopped >= targetBalls) {
-        return false; // Handled by level_clear
+        return false; // This will be handled by level_clear state
       }
-      return true; // Game over if no moves and not level clear
+      return true;
     }
     return false;
+  }
+
+  onFeverEnd(): 'level_clear' | 'playing' {
+    return 'level_clear';
   }
 }

@@ -24,28 +24,28 @@ export class EndlessStrategy implements GameModeStrategy {
   }
 
   processLevelProgression(ballsPopped: number, currentLevel: number, currentTarget: number, currentColorPool: Color[]): LevelProgressionResult {
-    // Endless expands color pool every 100 balls. Target balls can represent the next milestone.
+    const newPool = [...currentColorPool];
     if (ballsPopped >= currentTarget) {
-      const newTarget = currentTarget + 100;
-      let newColorPool = [...currentColorPool];
-      // Add a new color if available
-      if (newColorPool.length < ALL_COLORS.length) {
-        newColorPool.push(ALL_COLORS[newColorPool.length]);
+      if (newPool.length < ALL_COLORS.length) {
+        newPool.push(ALL_COLORS[newPool.length]);
       }
       return {
-        level: currentLevel, // level doesn't really matter for Endless, but we can increment it
-        targetBalls: newTarget,
-        colorPool: newColorPool
+        level: currentLevel,
+        targetBalls: currentTarget + 100,
+        colorPool: newPool,
+        shouldActivateFever: false, // Never activate fever in endless
       };
     }
-    return { level: currentLevel, targetBalls: currentTarget, colorPool: currentColorPool };
+    return { level: currentLevel, targetBalls: currentTarget, colorPool: newPool, shouldActivateFever: false };
   }
 
-  checkGameOver(_board: Board, _ballsPopped: number, _targetBalls: number, _isFeverMode: boolean): boolean {
-    // In endless, it should theoretically never game over unless board is completely full of balls and no valid moves/matches exist.
-    // Since we auto-reshuffle in fillSpaces when stuck, game over only occurs if even reshuffling fails, which is practically impossible,
-    // but we can return false for now to essentially make it endless.
-    return false;
+  checkGameOver(board: Board): boolean {
+    const isFull = !board.some(row => row.some(cell => cell === null));
+    return isFull && !hasPossibleMoves(board);
+  }
+
+  onFeverEnd(): 'level_clear' | 'playing' {
+    return 'playing'; // In endless, fever ending just returns to normal play
   }
 
   private reshuffle(board: Board, colorPool: Color[]): Board {

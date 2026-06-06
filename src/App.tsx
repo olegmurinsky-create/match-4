@@ -52,7 +52,6 @@ function App() {
   const hintIntervalRef = useRef<number | null>(null);
   const persistentHintRef = useRef<Position[] | null>(null);
   const gameStateRef = useRef<GameState>('mode_select');
-  const [highestCombo, setHighestCombo] = useState<number>(0);
   const [activeCombo, setActiveCombo] = useState<number>(0);
 
   const getStrategy = useCallback((mode: GameMode): GameModeStrategy => {
@@ -144,8 +143,10 @@ function App() {
         setFeverTimeLeft(prev => {
           if (prev <= 1) {
             clearInterval(timer);
-            setGameState('level_clear');
             setIsFeverMode(false);
+            // Ask the strategy what to do when fever ends
+            const nextState = getStrategy(gameMode).onFeverEnd();
+            setGameState(nextState);
             return 0;
           }
           return prev - 1;
@@ -154,7 +155,7 @@ function App() {
       
       return () => clearInterval(timer);
     }
-  }, [gameState, isFeverMode]);
+  }, [gameState, isFeverMode, gameMode, getStrategy]);
 
   const stopHinting = useCallback(() => {
     if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
@@ -222,9 +223,6 @@ function App() {
       
       currentCombo++;
       setActiveCombo(currentCombo);
-      if (currentCombo > highestCombo) {
-        setHighestCombo(currentCombo);
-      }
 
       // Calculate score roughly by grouping into 4s and 5s if possible, or just base it on length
       // Proper grouping is complex, but to avoid 8-balls giving 160 instead of 80, 
@@ -242,7 +240,7 @@ function App() {
       }
 
       // Check for fever mode activation *after* calculating points but *before* applying multiplier
-      if (!feverActive && p >= targetBalls) {
+      if (gameMode === 'survival' && !feverActive && p >= targetBalls) {
         feverActive = true;
         setIsFeverMode(true);
         setFeverTimeLeft(20);
@@ -299,7 +297,7 @@ function App() {
     }
 
     setIsProcessing(false);
-  }, [targetBalls, isFeverMode, ballsPopped, gameMode, getStrategy, colorPool, level, highestCombo]);
+  }, [targetBalls, isFeverMode, ballsPopped, gameMode, getStrategy, colorPool, level]);
 
   const handleCellClick = async (r: number, c: number) => {
     if (isProcessing || gameState !== 'playing') return;
@@ -394,7 +392,6 @@ function App() {
     setIsFeverMode(false);
     setFeverTimeLeft(20);
     setScoreSaved(false);
-    setHighestCombo(0);
     setActiveCombo(0);
   };
 
@@ -406,7 +403,7 @@ function App() {
   };
 
   return (
-    <div className={`game-container ${activeCombo >= 3 ? 'screen-shake' : ''}`}>
+    <div className={`game-container ${false && activeCombo >= 3 ? 'screen-shake' : ''}`}>
       {gameState === 'mode_select' ? (
         <div className="overlay mode-select">
           <h1>Match-4</h1>
