@@ -1,8 +1,10 @@
 # Match-4
 
+🎮 **[Play the Match-4 game online!](https://olegmurinsky-create.github.io/match-4/)**
+
 A simple web-based puzzle game that combines classic "Match-3" swapping mechanics with "Color Lines" matching rules (4 in a line). Built with React, TypeScript, Vite, and Framer Motion for smooth animations.
 
-![Match-4 Screenshot](match-4.png)
+<img src="match-4.png" alt="Match-4 Screenshot" width="500" height="500" />
 
 
 ## Game Modes
@@ -58,3 +60,7 @@ To create a production-ready build, run:
 npm run build
 ```
 The optimized files will be generated in the `dist` directory. You can preview the build using `npm run preview`.
+
+## Play game online
+
+🎮 **[https://olegmurinsky-create.github.io/match-4/](https://olegmurinsky-create.github.io/match-4/)**
