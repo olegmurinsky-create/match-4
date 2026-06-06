@@ -53,6 +53,7 @@ function App() {
   const persistentHintRef = useRef<Position[] | null>(null);
   const gameStateRef = useRef<GameState>('mode_select');
   const [highestCombo, setHighestCombo] = useState<number>(0);
+  const [activeCombo, setActiveCombo] = useState<number>(0);
 
   const getStrategy = useCallback((mode: GameMode): GameModeStrategy => {
     return mode === 'survival' ? new SurvivalStrategy() : new EndlessStrategy();
@@ -220,6 +221,7 @@ function App() {
       setBallsPopped(p);
       
       currentCombo++;
+      setActiveCombo(currentCombo);
       if (currentCombo > highestCombo) {
         setHighestCombo(currentCombo);
       }
@@ -270,6 +272,8 @@ function App() {
       matchResult = findMatches(b);
     }
     
+    setActiveCombo(0);
+
     if (gameStateRef.current !== 'playing') {
       setIsProcessing(false);
       return;
@@ -391,6 +395,7 @@ function App() {
     setFeverTimeLeft(20);
     setScoreSaved(false);
     setHighestCombo(0);
+    setActiveCombo(0);
   };
 
   const restartGame = () => {
@@ -401,7 +406,7 @@ function App() {
   };
 
   return (
-    <div className={`game-container ${highestCombo >= 3 ? 'screen-shake' : ''}`}>
+    <div className={`game-container ${activeCombo >= 3 ? 'screen-shake' : ''}`}>
       {gameState === 'mode_select' ? (
         <div className="overlay mode-select">
           <h1>Match-4</h1>
