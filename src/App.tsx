@@ -79,7 +79,7 @@ function App() {
       const saved = localStorage.getItem('match-4-leaderboard');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setLeaderboard(parsed);
+        if (Array.isArray(parsed)) setLeaderboard(parsed.slice(0, 9));
       }
     } catch (e) {
       console.error('Failed to load leaderboard', e);
@@ -88,7 +88,7 @@ function App() {
 
   const saveScore = () => {
     if (playerName.trim().length === 3) {
-      const newLeaderboard = [...leaderboard, { name: playerName.toUpperCase(), score }].sort((a, b) => b.score - a.score).slice(0, 10);
+      const newLeaderboard = [...leaderboard, { name: playerName.toUpperCase(), score }].sort((a, b) => b.score - a.score).slice(0, 9);
       setLeaderboard(newLeaderboard);
       try {
         localStorage.setItem('match-4-leaderboard', JSON.stringify(newLeaderboard));
@@ -337,6 +337,17 @@ function App() {
 
   return (
     <div className="game-container">
+      {/* TEMP DEBUG BUTTON */}
+      <button 
+        style={{ position: 'absolute', top: 0, right: 0, zIndex: 1000 }} 
+        onClick={() => {
+          setScore(15000);
+          setGameState('game_over');
+        }}
+      >
+        Force Game Over
+      </button>
+
       <StatusBar 
         score={score}
         level={level}
@@ -413,7 +424,7 @@ function App() {
               </div>
             )}
 
-            {leaderboard.length > 0 && (
+            {scoreSaved && leaderboard.length > 0 && (
               <div className="leaderboard">
                 <h3>High Scores</h3>
                 {leaderboard.map((entry, i) => (
