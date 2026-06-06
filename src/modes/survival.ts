@@ -8,14 +8,15 @@ export class SurvivalStrategy implements GameModeStrategy {
 
   processLevelProgression(ballsPopped: number, currentLevel: number, currentTarget: number, currentColorPool: Color[]): LevelProgressionResult {
     if (ballsPopped >= currentTarget) {
-      const newLevel = currentLevel + 1;
+      // Signal level up, but don't compute the new state here. App.tsx will do it.
       return {
-        level: newLevel,
-        targetBalls: currentTarget + 55 + newLevel * 20,
-        colorPool: currentColorPool
+        level: currentLevel, 
+        targetBalls: currentTarget, 
+        colorPool: currentColorPool,
+        shouldLevelUp: true 
       };
     }
-    return { level: currentLevel, targetBalls: currentTarget, colorPool: currentColorPool };
+    return { level: currentLevel, targetBalls: currentTarget, colorPool: currentColorPool, shouldLevelUp: false };
   }
 
   checkGameOver(board: Board, ballsPopped: number, targetBalls: number, isFeverMode: boolean): boolean {

@@ -395,7 +395,9 @@ function App() {
 
   const restartGame = () => {
     setGameState('mode_select');
-    setIsProcessing(false);
+    // Set isProcessing to true to stop any background loops.
+    // The state will be fully reset in startNewGame.
+    setIsProcessing(true);
   };
 
   return (

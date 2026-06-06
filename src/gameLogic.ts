@@ -8,6 +8,7 @@ export interface LevelProgressionResult {
   level: number;
   targetBalls: number;
   colorPool: Color[];
+  shouldLevelUp?: boolean;
 }
 
 export interface GameModeStrategy {
