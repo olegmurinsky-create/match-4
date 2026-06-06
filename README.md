@@ -5,16 +5,19 @@ A simple web-based puzzle game that combines classic "Match-3" swapping mechanic
 ![Match-4 Screenshot](match-4.png)
 
 
+## Game Modes
+
+- **Survival Mode:** A tactical, level-based challenge. Clear a target number of balls to advance to the next level. Reaching the target triggers **Fever Mode** — a fast-paced timed bonus round with a 2x score multiplier!
+- **Endless Mode:** A continuous, cascade-focused experience. Empty spaces automatically refill with new balls dropping from the top. Difficulty naturally scales over time by introducing new colors into the mix. Play until the board is full and no valid moves remain!
+
 ## Gameplay Features
 
-- **Level-Based Progression:** Swap adjacent balls to form lines of 4 or more to reach the level's target score.
-- **Fever Mode:** Once the target score is hit, a fast-paced timed bonus round begins!
-- **Cascading Combos:** Cleared balls trigger cascades, allowing for chain reactions with score multipliers.
-- **Any-Direction Matches:** Form lines horizontally, vertically, or diagonally.
-- **High Score Leaderboard:** At the end of a game, enter your initials and make it into the top 5 high scores.
-- **Automatic Hints:** If you get stuck, the game will automatically show you a possible move.
-- **Sleek UI:** A dynamic status bar keeps you updated on your score and game state, integrated directly with the game board.
-- **Smooth Animations:** Powered by `framer-motion` for a fluid and responsive experience.
+- **Cascading Combos:** Cleared balls trigger gravity and cascades, allowing for satisfying chain reactions with increasing score multipliers.
+- **Any-Direction Matches:** Form lines horizontally, vertically, or diagonally (minimum 4 in a line).
+- **Dual Leaderboards:** Separate High Score tracking for both Survival and Endless modes.
+- **Automatic Hints:** If you sit idle for a few seconds, the game will automatically highlight a possible move.
+- **Sleek UI:** A dynamic status bar keeps you updated on your level progress and score.
+- **Smooth Animations:** Powered by `framer-motion` for a fluid, responsive, and tactile experience.
 
 ## Tech Stack
 
