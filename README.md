@@ -2,6 +2,9 @@
 
 A simple web-based puzzle game that combines classic "Match-3" swapping mechanics with "Color Lines" matching rules (4 in a line). Built with React, TypeScript, Vite, and Framer Motion for smooth animations.
 
+![Match-4 Screenshot](.\match-4.png)
+
+
 ## Gameplay Features
 
 - **Level-Based Progression:** Swap adjacent balls to form lines of 4 or more to reach the level's target score.
