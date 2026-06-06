@@ -103,7 +103,8 @@ h1 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #00ffde;
+  font-family: 'Orbitron', sans-serif;
   z-index: 10;
   border-radius: 8px;
 }
@@ -111,6 +112,8 @@ h1 {
 .overlay h2 {
   font-size: 2.5rem;
   margin-bottom: 10px;
+  text-shadow: 0 0 5px #fff, 0 0 10px #00ffde;
+  text-transform: uppercase;
 }
 
 .overlay p {
@@ -122,18 +125,26 @@ h1 {
   padding: 10px 20px;
   font-size: 1.2rem;
   border-radius: 4px;
-  background: #4caf50;
-  color: white;
-  border: none;
+  background: #1a1a1a;
+  color: #00ffde;
+  border: 1px solid #00ffde;
   cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  text-transform: uppercase;
+  transition: all 0.2s;
 }
 
 .overlay button:hover {
-  background: #45a049;
+  background: #00ffde;
+  color: #1a1a1a;
+  box-shadow: 0 0 10px #00ffde;
 }
 
 .overlay button:disabled {
-  background: #555;
+  background: #333;
+  color: #777;
+  border-color: #555;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -146,42 +157,54 @@ h1 {
 .leaderboard-entry input {
   font-size: 1.2rem;
   padding: 5px;
-  width: 60px;
+  width: 80px;
   text-align: center;
   text-transform: uppercase;
-  background: #333;
-  color: white;
-  border: 1px solid #555;
+  background: #1a1a1a;
+  color: #00ffde;
+  border: 1px solid #00ffde;
+  font-family: 'Orbitron', sans-serif;
+  border-radius: 4px;
+}
+
+.leaderboard-entry input:focus {
+  outline: none;
+  box-shadow: 0 0 8px #00ffde;
 }
 
 .leaderboard {
-  background: rgba(255, 255, 255, 0.1);
+  background: #1a1a1a;
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 20px;
-  width: 200px;
+  width: 250px;
+  border: 2px solid #00ffde;
+  box-shadow: 0 0 15px #00ffde, inset 0 0 10px #00ffde;
 }
 
 .leaderboard h3 {
   margin-top: 0;
   text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid #00ffde;
   padding-bottom: 10px;
+  text-shadow: 0 0 5px #fff, 0 0 10px #00ffde;
+  text-transform: uppercase;
 }
 
 .leaderboard-row {
   display: flex;
   justify-content: space-between;
   margin: 5px 0;
-  font-family: monospace;
   font-size: 1.1rem;
 }
 
 .level {
   font-size: 0.5em;
-  background: #e91e63;
+  background: #00ffde;
+  color: #1a1a1a;
   padding: 2px 8px;
   border-radius: 10px;
   vertical-align: middle;
   margin-left: 10px;
+  font-weight: bold;
 }

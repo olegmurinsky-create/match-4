@@ -23,6 +23,7 @@ interface Position {
 interface ScoreEntry {
   name: string;
   score: number;
+  timestamp?: number;
 }
 
 type GameState = 'playing' | 'level_clear' | 'game_over';
@@ -88,7 +89,18 @@ function App() {
 
   const saveScore = () => {
     if (playerName.trim().length === 3) {
-      const newLeaderboard = [...leaderboard, { name: playerName.toUpperCase(), score }].sort((a, b) => b.score - a.score).slice(0, 9);
+      const newEntry: ScoreEntry = { 
+        name: playerName.toUpperCase(), 
+        score, 
+        timestamp: Date.now() 
+      };
+      const newLeaderboard = [...leaderboard, newEntry].sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        return (b.timestamp || 0) - (a.timestamp || 0);
+      }).slice(0, 9);
+      
       setLeaderboard(newLeaderboard);
       try {
         localStorage.setItem('match-4-leaderboard', JSON.stringify(newLeaderboard));
@@ -337,17 +349,6 @@ function App() {
 
   return (
     <div className="game-container">
-      {/* TEMP DEBUG BUTTON */}
-      <button 
-        style={{ position: 'absolute', top: 0, right: 0, zIndex: 1000 }} 
-        onClick={() => {
-          setScore(15000);
-          setGameState('game_over');
-        }}
-      >
-        Force Game Over
-      </button>
-
       <StatusBar 
         score={score}
         level={level}
@@ -418,7 +419,7 @@ function App() {
                   maxLength={3} 
                   placeholder="AAA" 
                   value={playerName}
-                  onChange={e => setPlayerName(e.target.value.replace(/[^A-Za-zА-Яа-я]/g, '').toUpperCase())}
+                  onChange={e => setPlayerName(e.target.value.replace(/[^A-Za-zА-Яа-я0-9]/g, '').toUpperCase())}
                 />
                 <button disabled={playerName.length !== 3} onClick={saveScore}>Save</button>
               </div>
