@@ -7,12 +7,14 @@ import {
   createInitialBoard, 
   findMatches, 
   removeMatches, 
-  applyGravity,
   hasPossibleMoves,
-  ROWS,
-  COLS,
-  findAPossibleMove
+  findAPossibleMove,
+  Color,
+  DEFAULT_COLORS,
+  GameModeStrategy
 } from './gameLogic';
+import { SurvivalStrategy } from './modes/survival';
+import { EndlessStrategy } from './modes/endless';
 import './App.css';
 
 interface Position {
@@ -26,17 +28,20 @@ interface ScoreEntry {
   timestamp?: number;
 }
 
-type GameState = 'playing' | 'level_clear' | 'game_over';
+type GameMode = 'survival' | 'endless';
+type GameState = 'mode_select' | 'playing' | 'level_clear' | 'game_over' | 'leaderboard';
 
 function App() {
-  const [board, setBoard] = useState<Board>(() => createEmptyInitial());
+  const [board, setBoard] = useState<Board>([]);
   const [selected, setSelected] = useState<Position | null>(null);
   const [score, setScore] = useState<number>(0);
   const [level, setLevel] = useState<number>(1);
   const [ballsPopped, setBallsPopped] = useState<number>(0);
   const [targetBalls, setTargetBalls] = useState<number>(75);
-  const [gameState, setGameState] = useState<GameState>('playing');
-  const [isProcessing, setIsProcessing] = useState<boolean>(true);
+  const [colorPool, setColorPool] = useState<Color[]>(DEFAULT_COLORS);
+  const [gameMode, setGameMode] = useState<GameMode>('survival');
+  const [gameState, setGameState] = useState<GameState>('mode_select');
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [playerName, setPlayerName] = useState<string>('');
   const [leaderboard, setLeaderboard] = useState<ScoreEntry[]>([]);
   const [isFeverMode, setIsFeverMode] = useState<boolean>(false);
@@ -46,6 +51,12 @@ function App() {
   const idleTimeoutRef = useRef<number | null>(null);
   const hintIntervalRef = useRef<number | null>(null);
   const persistentHintRef = useRef<Position[] | null>(null);
+  const gameStateRef = useRef<GameState>('mode_select');
+  const [highestCombo, setHighestCombo] = useState<number>(0);
+
+  const getStrategy = useCallback((mode: GameMode): GameModeStrategy => {
+    return mode === 'survival' ? new SurvivalStrategy() : new EndlessStrategy();
+  }, []);
 
   const ballVariants = {
     initial: (custom: { x: number, y: number }) => ({
@@ -76,16 +87,23 @@ function App() {
 
 
   useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
+  useEffect(() => {
     try {
-      const saved = localStorage.getItem('match-4-leaderboard');
+      const saved = localStorage.getItem(`match-4-leaderboard-${gameMode}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) setLeaderboard(parsed.slice(0, 9));
+      } else {
+        setLeaderboard([]);
       }
     } catch (e) {
       console.error('Failed to load leaderboard', e);
+      setLeaderboard([]);
     }
-  }, []);
+  }, [gameMode]);
 
   const saveScore = () => {
     if (playerName.trim().length === 3) {
@@ -103,7 +121,7 @@ function App() {
       
       setLeaderboard(newLeaderboard);
       try {
-        localStorage.setItem('match-4-leaderboard', JSON.stringify(newLeaderboard));
+        localStorage.setItem(`match-4-leaderboard-${gameMode}`, JSON.stringify(newLeaderboard));
       } catch (e) {
         console.error('Failed to save leaderboard', e);
       }
@@ -188,12 +206,24 @@ function App() {
     let matchResult = findMatches(b);
     let multiplier = 1;
     let feverActive = isFeverMode;
+    let currentCombo = 0;
     
+    const strategy = getStrategy(gameMode);
+
     while (matchResult.hasMatch) {
+      if (gameStateRef.current !== 'playing') {
+        break; // Abort if player hits restart
+      }
+
       const matchCount = matchResult.matchedPositions.length;
       p += matchCount;
       setBallsPopped(p);
       
+      currentCombo++;
+      if (currentCombo > highestCombo) {
+        setHighestCombo(currentCombo);
+      }
+
       // Calculate score roughly by grouping into 4s and 5s if possible, or just base it on length
       // Proper grouping is complex, but to avoid 8-balls giving 160 instead of 80, 
       // we can count how many 4-matches fit in. For a simple fix:
@@ -228,8 +258,10 @@ function App() {
       // Wait for disappearing animation
       await new Promise(res => setTimeout(res, 200));
       
-      // Apply gravity, triggering fall animation (NO REFILL)
-      b = applyGravity(b);
+      if (gameStateRef.current !== 'playing') break;
+
+      // Apply strategy's fillSpaces (which may apply gravity and refill)
+      b = strategy.fillSpaces(b, colorPool);
       setBoard(b);
       
       // Wait for falling animation to settle
@@ -238,8 +270,21 @@ function App() {
       matchResult = findMatches(b);
     }
     
+    if (gameStateRef.current !== 'playing') {
+      setIsProcessing(false);
+      return;
+    }
+
+    // Process Level Progression
+    const progression = strategy.processLevelProgression(p, level, targetBalls, colorPool);
+    if (progression.level !== level) setLevel(progression.level);
+    if (progression.targetBalls !== targetBalls) setTargetBalls(progression.targetBalls);
+    if (progression.colorPool.length !== colorPool.length) setColorPool(progression.colorPool);
+    
     // Check level end condition
-    if (!hasPossibleMoves(b)) {
+    if (strategy.checkGameOver(b, p, targetBalls, feverActive)) {
+      setGameState('game_over');
+    } else if (!hasPossibleMoves(b) && gameMode === 'survival') {
       if (feverActive) {
         // Let the timer run out
       } else if (p >= targetBalls) {
@@ -250,7 +295,7 @@ function App() {
     }
 
     setIsProcessing(false);
-  }, [targetBalls, isFeverMode, ballsPopped]);
+  }, [targetBalls, isFeverMode, ballsPopped, gameMode, getStrategy, colorPool, level, highestCombo]);
 
   const handleCellClick = async (r: number, c: number) => {
     if (isProcessing || gameState !== 'playing') return;
@@ -327,130 +372,151 @@ function App() {
     setLevel(nextLevel);
     setBallsPopped(0);
     setTargetBalls(55 + nextLevel * 20);
-    setBoard(createInitialBoard());
+    setBoard(createInitialBoard(colorPool));
     setGameState('playing');
     setIsFeverMode(false);
     setFeverTimeLeft(20);
-    // Note: Resetting a real timer would go here
   };
 
-  const restartGame = () => {
+  const startNewGame = (mode: GameMode) => {
+    setGameMode(mode);
     setLevel(1);
     setScore(0);
     setBallsPopped(0);
-    setTargetBalls(75);
-    setBoard(createInitialBoard());
+    setTargetBalls(mode === 'survival' ? 75 : 100); // 100 for endless milestone
+    setColorPool(DEFAULT_COLORS);
+    setBoard(createInitialBoard(DEFAULT_COLORS));
     setGameState('playing');
     setIsFeverMode(false);
     setFeverTimeLeft(20);
     setScoreSaved(false);
-    // Note: Resetting a real timer would go here
+    setHighestCombo(0);
+  };
+
+  const restartGame = () => {
+    setGameState('mode_select');
+    setIsProcessing(false);
   };
 
   return (
-    <div className="game-container">
-      <StatusBar 
-        score={score}
-        level={level}
-        ballsPopped={ballsPopped}
-        targetBalls={targetBalls}
-        onRestart={restartGame}
-      />
-      <div className="board">
-        {board.map((row, r) => (
-          row.map((_, c) => (
-            <div 
-              key={`${r}-${c}`}
-              className={`cell ${selected?.r === r && selected?.c === c ? 'selected' : ''}`}
-              onClick={() => handleCellClick(r, c)}
-            />
-          ))
-        ))}
-        <AnimatePresence>
-          {board.flatMap((row, r) => 
-            row.map((ball, c) => {
-              if (!ball) return null;
-              
-              const x = 7 + c * 32;
-              const y = 7 + r * 32;
-
-              const isHinted = hintedBallIds.includes(ball.id);
-              return (
-                <motion.div
-                  key={ball.id}
-                  variants={ballVariants}
-                  custom={{ x, y }}
-                  initial="initial"
-                  animate={isHinted ? ["animate", "hint"] : "animate"}
-                  exit="exit"
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30,
-                    mass: 0.8
-                  }}
-                  className={`ball ${ball.color}`}
-                />
-              );
-            })
-          )}
-        </AnimatePresence>
-
-        {gameState === 'level_clear' && (
-          <div className="overlay">
-            <h2>Level {level} Cleared!</h2>
-            <p>Score: {score}</p>
-            <button disabled={isProcessing} onClick={startNextLevel}>Next Level</button>
+    <div className={`game-container ${highestCombo >= 3 ? 'screen-shake' : ''}`}>
+      {gameState === 'mode_select' ? (
+        <div className="overlay mode-select">
+          <h1>Match-4</h1>
+          <div className="mode-options">
+            <button className="mode-btn" onClick={() => startNewGame('survival')}>
+              <h2>Survival Mode</h2>
+              <p>Reach target score to level up.</p>
+            </button>
+            <button className="mode-btn" onClick={() => startNewGame('endless')}>
+              <h2>Endless Mode</h2>
+              <p>Continuous cascades. Auto-refills.</p>
+            </button>
           </div>
-        )}
-
-        {gameState === 'game_over' && (
-          <div className="overlay game-over">
-            {!scoreSaved && (
-              <>
-                <h2>Game Over</h2>
-                <p>Final Score: {score}</p>
-              </>
-            )}
-            
-            {!scoreSaved && (
-              <div className="leaderboard-entry">
-                <input 
-                  maxLength={3} 
-                  placeholder="AAA" 
-                  value={playerName}
-                  onChange={e => setPlayerName(e.target.value.replace(/[^A-Za-zА-Яа-я0-9]/g, '').toUpperCase())}
+        </div>
+      ) : (
+        <>
+          <StatusBar 
+            score={score}
+            level={level}
+            ballsPopped={ballsPopped}
+            targetBalls={targetBalls}
+            onRestart={restartGame}
+            gameMode={gameMode}
+          />
+          <div className="board">
+            {board.map((row, r) => (
+              row.map((_, c) => (
+                <div 
+                  key={`${r}-${c}`}
+                  className={`cell ${selected?.r === r && selected?.c === c ? 'selected' : ''}`}
+                  onClick={() => handleCellClick(r, c)}
                 />
-                <button disabled={playerName.length !== 3} onClick={saveScore}>Save</button>
+              ))
+            ))}
+            <AnimatePresence>
+              {board.flatMap((row, r) => 
+                row.map((ball, c) => {
+                  if (!ball) return null;
+                  
+                  const x = 7 + c * 32;
+                  const y = 7 + r * 32;
+
+                  const isHinted = hintedBallIds.includes(ball.id);
+                  return (
+                    <motion.div
+                      key={ball.id}
+                      variants={ballVariants}
+                      custom={{ x, y }}
+                      initial="initial"
+                      animate={isHinted ? ["animate", "hint"] : "animate"}
+                      exit="exit"
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30,
+                        mass: 0.8
+                      }}
+                      className={`ball ${ball.color}`}
+                    />
+                  );
+                })
+              )}
+            </AnimatePresence>
+
+            {gameState === 'level_clear' && (
+              <div className="overlay">
+                <h2>Level {level} Cleared!</h2>
+                <p>Score: {score}</p>
+                <button disabled={isProcessing} onClick={startNextLevel}>Next Level</button>
               </div>
             )}
 
-            {scoreSaved && leaderboard.length > 0 && (
-              <div className="leaderboard">
-                <h3>High Scores</h3>
-                {leaderboard.map((entry, i) => (
-                  <div key={i} className="leaderboard-row">
-                    <span>{entry.name}</span>
-                    <span>{entry.score}</span>
+            {gameState === 'game_over' && (
+              <div className="overlay game-over">
+                {!scoreSaved && (
+                  <>
+                    <h2>Game Over</h2>
+                    <p>Final Score: {score}</p>
+                  </>
+                )}
+                
+                {!scoreSaved && (
+                  <div className="leaderboard-entry">
+                    <input 
+                      maxLength={3} 
+                      placeholder="AAA" 
+                      value={playerName}
+                      onChange={e => setPlayerName(e.target.value.replace(/[^A-Za-zА-Яа-я0-9]/g, '').toUpperCase())}
+                    />
+                    <button disabled={playerName.length !== 3} onClick={saveScore}>Save</button>
                   </div>
-                ))}
+                )}
+
+                {scoreSaved && leaderboard.length > 0 && (
+                  <div className="leaderboard">
+                    <h3>High Scores</h3>
+                    {leaderboard.map((entry, i) => (
+                      <div key={i} className="leaderboard-row">
+                        <span>{entry.name}</span>
+                        <span>{entry.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button className="restart-btn" disabled={isProcessing} onClick={restartGame}>Menu</button>
               </div>
             )}
-
-            <button className="restart-btn" disabled={isProcessing} onClick={restartGame}>Play Again</button>
           </div>
-        )}
-      </div>
-      <BottomBar 
-        isFeverMode={isFeverMode}
-        time={`${Math.floor(feverTimeLeft / 60)}:${(feverTimeLeft % 60).toString().padStart(2, '0')}`}
-      />
+          <BottomBar 
+            isFeverMode={isFeverMode}
+            time={`${Math.floor(feverTimeLeft / 60)}:${(feverTimeLeft % 60).toString().padStart(2, '0')}`}
+          />
+        </>
+      )}
     </div>
   );
-}
-
-function createEmptyInitial(): Board {
-  return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
 }
 
 export default App;

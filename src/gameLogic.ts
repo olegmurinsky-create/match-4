@@ -1,7 +1,20 @@
-export type Color = 'red' | 'blue' | 'green' | 'yellow';
-export const COLORS: Color[] = ['red', 'blue', 'green', 'yellow'];
+export type Color = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'cyan' | 'pink';
+export const DEFAULT_COLORS: Color[] = ['red', 'blue', 'green', 'yellow'];
+export const ALL_COLORS: Color[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'cyan', 'pink'];
 export const ROWS = 15;
 export const COLS = 15;
+
+export interface LevelProgressionResult {
+  level: number;
+  targetBalls: number;
+  colorPool: Color[];
+}
+
+export interface GameModeStrategy {
+  fillSpaces(board: Board, colorPool: Color[]): Board;
+  processLevelProgression(ballsPopped: number, currentLevel: number, currentTarget: number, currentColorPool: Color[]): LevelProgressionResult;
+  checkGameOver(board: Board, ballsPopped: number, targetBalls: number, isFeverMode: boolean): boolean;
+}
 
 export interface Ball {
   id: string;
@@ -10,14 +23,14 @@ export interface Ball {
 
 export type Board = (Ball | null)[][];
 
-export function getRandomColor(): Color {
-  return COLORS[Math.floor(Math.random() * COLORS.length)];
+export function getRandomColor(colorPool: Color[]): Color {
+  return colorPool[Math.floor(Math.random() * colorPool.length)];
 }
 
-export function createBall(color?: Color): Ball {
+export function createBall(colorPool: Color[], color?: Color): Ball {
   return {
     id: Math.random().toString(36).substring(2, 11),
-    color: color || getRandomColor()
+    color: color || getRandomColor(colorPool)
   };
 }
 
@@ -25,12 +38,12 @@ export function createEmptyBoard(): Board {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
 }
 
-export function fillRandom(board: Board): Board {
+export function fillRandom(board: Board, colorPool: Color[]): Board {
   const newBoard = board.map(row => [...row]);
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       if (newBoard[r][c] === null) {
-        newBoard[r][c] = createBall();
+        newBoard[r][c] = createBall(colorPool);
       }
     }
   }
@@ -116,7 +129,7 @@ export function applyGravity(board: Board): Board {
   return newBoard;
 }
 
-export function createInitialBoard(): Board {
+export function createInitialBoard(colorPool: Color[] = DEFAULT_COLORS): Board {
   let board: Board;
   
   do {
@@ -127,7 +140,7 @@ export function createInitialBoard(): Board {
       for (let c = 0; c < COLS; c++) {
         let color: Color;
         do {
-          color = getRandomColor();
+          color = getRandomColor(colorPool);
           board[r][c] = { id: Math.random().toString(36).substring(2, 11), color };
         } while (
           // Simple check to prevent immediate matches (horizontal, vertical, and diagonals)

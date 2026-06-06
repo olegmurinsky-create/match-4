@@ -8,7 +8,8 @@ import {
   hasPossibleMoves,
   createBall,
   ROWS,
-  COLS
+  COLS,
+  DEFAULT_COLORS
 } from './gameLogic';
 
 describe('Game Logic', () => {
@@ -25,7 +26,7 @@ describe('Game Logic', () => {
 
   it('fills empty board with random colors', () => {
     const emptyBoard = createEmptyBoard();
-    const filledBoard = fillRandom(emptyBoard);
+    const filledBoard = fillRandom(emptyBoard, DEFAULT_COLORS);
     filledBoard.forEach(row => {
       row.forEach(cell => {
         expect(cell).not.toBeNull();
@@ -45,9 +46,9 @@ describe('Game Logic', () => {
     it('ignores lines of less than 4', () => {
       const board = createEmptyBoard();
       // 3 horizontal
-      board[0][0] = createBall('red');
-      board[0][1] = createBall('red');
-      board[0][2] = createBall('red');
+      board[0][0] = createBall(DEFAULT_COLORS, 'red');
+      board[0][1] = createBall(DEFAULT_COLORS, 'red');
+      board[0][2] = createBall(DEFAULT_COLORS, 'red');
       
       const result = findMatches(board);
       expect(result.hasMatch).toBe(false);
@@ -56,7 +57,7 @@ describe('Game Logic', () => {
     it('finds horizontal matches of 4 or more', () => {
       const board = createEmptyBoard();
       for (let i = 0; i < 4; i++) {
-        board[2][i] = createBall('blue');
+        board[2][i] = createBall(DEFAULT_COLORS, 'blue');
       }
       
       const result = findMatches(board);
@@ -67,7 +68,7 @@ describe('Game Logic', () => {
     it('finds vertical matches of 4 or more', () => {
       const board = createEmptyBoard();
       for (let i = 0; i < 5; i++) {
-        board[i][4] = createBall('green');
+        board[i][4] = createBall(DEFAULT_COLORS, 'green');
       }
       
       const result = findMatches(board);
@@ -78,7 +79,7 @@ describe('Game Logic', () => {
     it('finds diagonal matches of 4 or more (down-right)', () => {
       const board = createEmptyBoard();
       for (let i = 0; i < 4; i++) {
-        board[i][i] = createBall('yellow');
+        board[i][i] = createBall(DEFAULT_COLORS, 'yellow');
       }
       
       const result = findMatches(board);
@@ -89,7 +90,7 @@ describe('Game Logic', () => {
     it('finds diagonal matches of 4 or more (down-left)', () => {
       const board = createEmptyBoard();
       for (let i = 0; i < 4; i++) {
-        board[i][COLS - 1 - i] = createBall('red');
+        board[i][COLS - 1 - i] = createBall(DEFAULT_COLORS, 'red');
       }
       
       const result = findMatches(board);
@@ -101,8 +102,8 @@ describe('Game Logic', () => {
   describe('removeMatches', () => {
     it('removes matched positions from board', () => {
       const board = createEmptyBoard();
-      board[0][0] = createBall('red');
-      board[0][1] = createBall('blue');
+      board[0][0] = createBall(DEFAULT_COLORS, 'red');
+      board[0][1] = createBall(DEFAULT_COLORS, 'blue');
       
       const positions = [{ r: 0, c: 0 }];
       const newBoard = removeMatches(board, positions);
@@ -116,8 +117,8 @@ describe('Game Logic', () => {
     it('applies gravity without refilling', () => {
       const board = createEmptyBoard();
       // Leave bottom cell null, put 'red' above it.
-      board[ROWS - 2][0] = createBall('red');
-      board[ROWS - 3][0] = createBall('blue');
+      board[ROWS - 2][0] = createBall(DEFAULT_COLORS, 'red');
+      board[ROWS - 3][0] = createBall(DEFAULT_COLORS, 'blue');
       
       const newBoard = applyGravity(board);
       
@@ -135,10 +136,10 @@ describe('Game Logic', () => {
   describe('hasPossibleMoves', () => {
     it('returns true if a valid move exists', () => {
       const board = createEmptyBoard();
-      board[0][0] = createBall('red');
-      board[0][1] = createBall('red');
-      board[0][2] = createBall('red');
-      board[1][3] = createBall('red');
+      board[0][0] = createBall(DEFAULT_COLORS, 'red');
+      board[0][1] = createBall(DEFAULT_COLORS, 'red');
+      board[0][2] = createBall(DEFAULT_COLORS, 'red');
+      board[1][3] = createBall(DEFAULT_COLORS, 'red');
       
       // Swapping [0][3] and [1][3] will complete a horizontal match
       expect(hasPossibleMoves(board)).toBe(true);
