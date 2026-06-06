@@ -414,11 +414,9 @@ function App() {
           <div className="mode-options">
             <button className="mode-btn" onClick={() => startNewGame('survival')}>
               <h2>Survival Mode</h2>
-              <p>Reach target score to level up.</p>
             </button>
             <button className="mode-btn" onClick={() => startNewGame('endless')}>
               <h2>Endless Mode</h2>
-              <p>Continuous cascades. Auto-refills.</p>
             </button>
           </div>
         </div>
@@ -521,12 +519,6 @@ function App() {
             isFeverMode={isFeverMode}
             time={`${Math.floor(feverTimeLeft / 60)}:${(feverTimeLeft % 60).toString().padStart(2, '0')}`}
           />
-          <button 
-            onClick={() => { setScore(20000); setGameState('game_over'); setIsProcessing(false); }} 
-            style={{ position: 'absolute', bottom: 10, right: 10, zIndex: 100, background: 'red', color: 'white', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
-          >
-            DEBUG: Game Over (20k)
-          </button>
         </>
       )}
     </div>
